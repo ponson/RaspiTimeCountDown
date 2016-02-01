@@ -29,11 +29,12 @@ public class TimerContent {
     };
     
     public int sub() {
-/*        
+ /*      
         if (min > 0)
             min--;
         return 0;
-*/        
+ */       
+        
         if (sec == 0 && min > 0) {
             min--;            
             sec = 59;
@@ -44,7 +45,7 @@ public class TimerContent {
             return -1;
         return 0;
     };
-    
+   
     public void reset() {
         sec = 0;
         min = COUNT_DOWN_MIN;

@@ -29,6 +29,7 @@ public class TimeCountDown {
     
     private static final GpioPinDigitalOutput[][] pins = new GpioPinDigitalOutput[2][7];
     
+    
     private static int cur_status = TC_STAT_STOP;
     private static int new_status = TC_STAT_STOP;
     
@@ -39,7 +40,8 @@ public class TimeCountDown {
     // Speaker 
     private static GpioPinDigitalOutput spk = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_25);
         
-
+    // dot indicator for indicating the count down is processing...
+    private static GpioPinDigitalOutput pinDot = gpio.provisionDigitalOutputPin(RaspiPin.GPIO_23);
     /**
      * @param args the command line arguments
      */
@@ -89,6 +91,9 @@ public class TimeCountDown {
                 PinState state = event.getState();
                 
                 if (state.isHigh()) {
+                    // Every time the switch was touched, speaker play a sound.
+                    spk.low();
+                    spk.pulse(200, true);
                     if (pin == pinSwitch0) {
                         System.out.println("Switches 0 pressed.");
        
@@ -119,6 +124,8 @@ public class TimeCountDown {
                         System.out.println("Switches 2 pressed.");
                         System.out.println("Bye...");
                         displayOff();
+                        pinDot.high();//turn off
+                        spk.low(); // turn off
                         gpio.shutdown();
                         System.exit(0);
                     }
@@ -141,16 +148,19 @@ public class TimeCountDown {
             switch(cur_status) {
                 case TC_STAT_START:
                 case TC_STAT_RESUME:
+                    pinDot.blink(500, 1000);
                     delay(1000);
                     cnt_time.sub();
                     cnt_time.printTime();                    
                     displayTime(cnt_time.getMin());
                     if (cnt_time.checkTimeOut() == true) {
-                        spk.blink(500, 10000);
-                        displayTimeFlash(cnt_time.getMin(), 10000);
-                        spk.setState(false);
                         new_status = TC_STAT_STOP;
                         executeAfterStatusChanged(new_status);
+                        for (int i=0; i< 5; i++) {
+                            spk.pulse(500, true);
+                            delay(500);
+                        }
+                        displayTimeFlash(cnt_time.getMin(), 5000);                        
                     }
                     break;
                 case TC_STAT_STOP:
@@ -213,43 +223,21 @@ public class TimeCountDown {
         
         switch (cur_status){
             case TC_STAT_START:
-                timeCountDownStart();
                 break;
             case TC_STAT_STOP:
-                timeCountDownStop();
+                delay(1000);
+                pinDot.high();//turn off
                 break;
             case TC_STAT_PAUSE:
-                timeCountDownPause();
+                delay(1000);
+                pinDot.high();//turn off
                 break;
             case TC_STAT_RESUME:
-                timeCountDownResume();
                 break;
             default:
                 System.out.println("Inavlid Status Value!!!");
                 break;
         }
-    }
-    
-    private static int timeCountDownStart() {
-        spk.pulse(200, true);
-        return 0;
-    }
-    
-    private static int timeCountDownStop() {
-        spk.pulse(200, true);
-        return 0;
-    }
-    
-    private static int timeCountDownPause() {
-        spk.pulse(200, true);
-        return 0;
-    }
-    
-    private static int timeCountDownResume() {
-        spk.pulse(200, true);
-        displayTime(cnt_time.getMin());
-        delay(1000);
-        return 0;
     }
     
     private static void delay(int ms) {
